@@ -1,0 +1,19 @@
+# build output
+web/node_modules/
+web/dist/
+server/target/
+server/src/main/resources/static/
+
+# runtime data
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# editors / os
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

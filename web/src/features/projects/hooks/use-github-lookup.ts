@@ -1,0 +1,55 @@
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { errorMessage } from '@/api/client';
+import { fetchGitHubRepo } from '@/api/github';
+import { githubRepoFromUrl } from '../lib/form';
+
+const DEBOUNCE_MS = 500;
+
+function useDebounced<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(value), delay);
+    return () => window.clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
+export interface GitHubLookup {
+  /** idle：地址还不是 GitHub 仓库；loading / ready / error 对应后端代取的结果。 */
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  /** GitHub 仓库描述，用作简介建议；没有描述时为 null。 */
+  suggestion: string | null;
+  error: string | null;
+}
+
+/**
+ * 监听表单里的仓库地址，去抖后请后端代取 GitHub 信息。
+ * 只有地址形如 github.com/owner/repo 时才会真正发请求。
+ */
+export function useGitHubLookup(repoUrl: string): GitHubLookup {
+  const debounced = useDebounced(repoUrl.trim(), DEBOUNCE_MS);
+  const parsed = githubRepoFromUrl(debounced);
+  const key = parsed ? `${parsed.owner}/${parsed.name}`.toLowerCase() : '';
+  const query = useQuery({
+    queryKey: ['github-repo', key],
+    enabled: key.length > 0,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: false,
+    queryFn: ({ signal }) => fetchGitHubRepo(debounced, signal),
+  });
+
+  let status: GitHubLookup['status'] = 'idle';
+  if (key) {
+    if (query.isError) status = 'error';
+    else if (query.data) status = query.isFetching ? 'loading' : 'ready';
+    else status = 'loading';
+  }
+
+  return {
+    status,
+    suggestion: query.data?.summarySuggestion?.trim() || null,
+    error: query.isError ? errorMessage(query.error) : null,
+  };
+}

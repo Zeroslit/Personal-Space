@@ -1,0 +1,14 @@
+# 统一换行符：源码与 shell 脚本用 LF，Windows 脚本用 CRLF
+* text=auto
+*.sh text eol=lf
+mvnw text eol=lf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.jar binary
+*.db binary

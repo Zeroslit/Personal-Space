@@ -1,0 +1,117 @@
+[
+  {
+    "id": "p_aurora_notes",
+    "title": "Aurora Notes",
+    "summary": "本地优先的 Markdown 笔记应用，支持双向链接与全文检索，无需联网即可使用。",
+    "repoUrl": "https://github.com/example/aurora-notes",
+    "siteUrl": "https://example.github.io/aurora-notes/",
+    "cover": "",
+    "tags": ["笔记", "Markdown", "本地优先"],
+    "language": "TypeScript",
+    "status": "active",
+    "stars": 1284,
+    "pinned": true,
+    "snippets": [
+      {
+        "filename": "src/db/search.ts",
+        "language": "typescript",
+        "code": "export async function search(keyword: string): Promise<Note[]> {\n  const tokens = tokenize(keyword);\n  if (tokens.length === 0) return [];\n  const rows = await db.all(\n    `SELECT * FROM notes WHERE body LIKE ? ORDER BY updated_at DESC LIMIT 50`,\n    [`%${tokens.join('%')}%`],\n  );\n  return rows.map(toNote);\n}"
+      },
+      {
+        "filename": "src/lib/debounce.ts",
+        "language": "typescript",
+        "code": "export function debounce<A extends unknown[]>(fn: (...args: A) => void, wait = 150) {\n  let timer: ReturnType<typeof setTimeout> | undefined;\n  return (...args: A) => {\n    if (timer) clearTimeout(timer);\n    timer = setTimeout(() => fn(...args), wait);\n  };\n}"
+      }
+    ]
+  },
+  {
+    "id": "p_httplite",
+    "title": "httplite",
+    "summary": "一个零依赖的 C++17 HTTP 服务端库，主打单文件集成与内嵌静态资源，适合做小工具的后端。",
+    "repoUrl": "https://github.com/example/httplite",
+    "siteUrl": "",
+    "cover": "",
+    "tags": ["C++", "网络", "自托管"],
+    "language": "C++",
+    "status": "active",
+    "stars": 642,
+    "pinned": true,
+    "snippets": [
+      {
+        "filename": "examples/hello.cpp",
+        "language": "cpp",
+        "code": "#include \"httplite/server.hpp\"\n\nint main() {\n  httplite::Server server;\n  server.get(\"/api/health\", [](const auto&, auto& res) {\n    res.json({{ \"status\", \"ok\" }});\n  });\n  server.static_dir(\"web/dist\");\n  return server.listen(\"127.0.0.1\", 8080);\n}"
+      },
+      {
+        "filename": "CMakeLists.txt",
+        "language": "cmake",
+        "code": "cmake_minimum_required(VERSION 3.16)\nproject(httplite_demo CXX)\n\nset(CMAKE_CXX_STANDARD 17)\nset(CMAKE_CXX_STANDARD_REQUIRED ON)\n\nadd_executable(demo examples/hello.cpp)\ntarget_include_directories(demo PRIVATE include)\n"
+      }
+    ]
+  },
+  {
+    "id": "p_starpage",
+    "title": "Starpage",
+    "summary": "一个自托管的书签导航页，支持拖拽排序、多主题与浏览器扩展一键收藏。",
+    "repoUrl": "https://github.com/example/starpage",
+    "siteUrl": "https://starpage.example.dev/",
+    "cover": "",
+    "tags": ["React", "自托管", "导航"],
+    "language": "TypeScript",
+    "status": "wip",
+    "stars": 318,
+    "pinned": false,
+    "snippets": [
+      {
+        "filename": "src/hooks/useReorder.ts",
+        "language": "typescript",
+        "code": "export function useReorder(items: Item[]) {\n  const [order, setOrder] = useState(items.map((i) => i.id));\n\n  const move = useCallback((from: number, to: number) => {\n    setOrder((prev) => {\n      const next = prev.slice();\n      const [moved] = next.splice(from, 1);\n      next.splice(to, 0, moved);\n      return next;\n    });\n  }, []);\n\n  return { order, move };\n}"
+      }
+    ]
+  },
+  {
+    "id": "p_ledger-cli",
+    "title": "ledger-cli",
+    "summary": "命令行记账工具，用纯文本保存账本，支持月度报表与预算超支提醒。",
+    "repoUrl": "https://github.com/example/ledger-cli",
+    "siteUrl": "",
+    "cover": "",
+    "tags": ["CLI", "Python", "记账"],
+    "language": "Python",
+    "status": "active",
+    "stars": 2107,
+    "pinned": false,
+    "snippets": [
+      {
+        "filename": "ledger/report.py",
+        "language": "python",
+        "code": "def monthly_report(entries: list[Entry], month: str) -> dict[str, Decimal]:\n    totals: dict[str, Decimal] = defaultdict(Decimal)\n    for entry in entries:\n        if not entry.date.startswith(month):\n            continue\n        for posting in entry.postings:\n            totals[posting.account] += posting.amount\n    return dict(sorted(totals.items(), key=lambda kv: kv[1]))"
+      },
+      {
+        "filename": "scripts/install.sh",
+        "language": "bash",
+        "code": "#!/usr/bin/env bash\nset -euo pipefail\n\npipx install ledger-cli --force\nledger --version\n"
+      }
+    ]
+  },
+  {
+    "id": "p_pixel-forge",
+    "title": "Pixel Forge",
+    "summary": "浏览器里的像素画编辑器与素材库，支持导出 PNG / GIF，多人协作画布正在开发中。",
+    "repoUrl": "https://github.com/example/pixel-forge",
+    "siteUrl": "https://pixel-forge.example.dev/",
+    "cover": "",
+    "tags": ["Canvas", "游戏素材", "工具"],
+    "language": "JavaScript",
+    "status": "idea",
+    "stars": 87,
+    "pinned": false,
+    "snippets": [
+      {
+        "filename": "src/canvas/export.ts",
+        "language": "javascript",
+        "code": "export function exportPng(layers, scale = 1) {\n  const canvas = document.createElement('canvas');\n  canvas.width = layers.width * scale;\n  canvas.height = layers.height * scale;\n  const ctx = canvas.getContext('2d');\n  ctx.imageSmoothingEnabled = false;\n  ctx.drawImage(layers.toOffscreen(), 0, 0, canvas.width, canvas.height);\n  return canvas.toDataURL('image/png');\n}"
+      }
+    ]
+  }
+]

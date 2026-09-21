@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="minimal">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>个人空间</title>
+    <script>
+      (function () {
+        function toTriplet(hex) {
+          if (typeof hex !== 'string') return null;
+          var m = hex.trim().match(/^#?([0-9a-fA-F]{6})$/);
+          if (!m) return null;
+          var n = parseInt(m[1], 16);
+          return ((n >> 16) & 255) + ' ' + ((n >> 8) & 255) + ' ' + (n & 255);
+        }
+        var theme = 'minimal';
+        var accent = null;
+        try {
+          var raw = localStorage.getItem('pspace:settings');
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed && typeof parsed.theme === 'string' && parsed.theme) theme = parsed.theme;
+            if (parsed && typeof parsed.accent === 'string' && parsed.accent) accent = parsed.accent;
+          }
+        } catch (e) {
+          /* localStorage blocked: keep defaults */
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+        var triplet = toTriplet(accent);
+        if (triplet) {
+          document.documentElement.style.setProperty('--c-accent', triplet);
+          document.documentElement.setAttribute('data-accent', 'custom');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
