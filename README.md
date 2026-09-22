@@ -1,5 +1,7 @@
 # 个人空间（Personal Space）
 
+> [English README](README.en.md) · 中文版
+
 单用户的个人项目展示站：把自己的项目集中在一页里，每个项目包含**简介、链接（GitHub 仓库 / 演示网址）、代码片段、内嵌实况演示**。目标是在观感与交互上比 GitHub 更简洁、更顺手：乐观更新、删除 5 秒内可撤销、拖拽排序、命令面板、6 套主题与自定义主色。
 
 后端 Java 17（JDK 内置 HTTP 服务器）+ Gson + sqlite-jdbc，Maven 打成**单个可执行 jar**，同一个进程同时提供 REST API 与内嵌前端页面；前端 React 18 + TypeScript + Vite + Tailwind。全程**不依赖任何在线 CDN**，也不使用 Electron / Tauri / YAML / Redux。
@@ -169,7 +171,7 @@ java -jar server/target/personal-space.jar &
 BASE_URL=http://127.0.0.1:8787 ./scripts/smoke-test.sh
 ```
 
-逐项功能核对见 `scripts/acceptance-checklist.md`。
+逐项功能核对见 `scripts/acceptance-checklist.md`（英文版：`scripts/acceptance-checklist.en.md`）。
 
 ## 主题自定义
 

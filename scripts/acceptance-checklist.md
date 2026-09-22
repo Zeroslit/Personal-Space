@@ -1,5 +1,7 @@
 # 验收清单
 
+> [English version](acceptance-checklist.en.md) · 中文版
+
 ## 前置
 
 1. 构建：`./scripts/build.sh`（Windows：`./scripts/build.ps1`）→ 产出 `server/target/personal-space.jar`
