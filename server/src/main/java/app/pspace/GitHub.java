@@ -171,13 +171,24 @@ public final class GitHub {
         }
         JsonObject json = parsed.getAsJsonObject();
         String description = text(json, "description");
+        // 仓库没写描述时退一步用 README 首段，避免「粘贴地址却什么都没填」。
+        String suggestion = description;
+        String suggestionSource = description == null ? null : "description";
+        if (description == null) {
+            String fromReadme = readmeSuggestion(repo);
+            if (fromReadme != null) {
+                suggestion = fromReadme;
+                suggestionSource = "readme";
+            }
+        }
         JsonObject out = new JsonObject();
         out.addProperty("owner", repo.owner());
         out.addProperty("name", repo.name());
         out.addProperty("fullName", repo.fullName());
         out.addProperty("htmlUrl", text(json, "html_url"));
         out.addProperty("description", description);
-        out.addProperty("summarySuggestion", description);
+        out.addProperty("summarySuggestion", suggestion);
+        out.addProperty("summarySource", suggestionSource);
         out.addProperty("homepage", text(json, "homepage"));
         out.addProperty("language", text(json, "language"));
         out.addProperty("defaultBranch", text(json, "default_branch"));
@@ -198,6 +209,128 @@ public final class GitHub {
         out.add("topics", topics);
         out.addProperty("fetchedAt", Instant.now().toString());
         return out;
+    }
+
+    /** README 首段最多截到多少字符当简介建议。 */
+    private static final int SUMMARY_MAX = 240;
+
+    /**
+     * 仓库没有 description 时的兜底：读 README，把第一段正文当作简介建议。
+     * 这里任何失败都不该影响整个请求，所以统一吞掉异常返回 null。
+     */
+    private static String readmeSuggestion(Repo repo) {
+        HttpRequest.Builder builder = HttpRequest
+                .newBuilder(URI.create(API + repo.owner() + "/" + repo.name() + "/readme"))
+                .header("Accept", "application/vnd.github.raw")
+                .header("User-Agent", "personal-space/" + Version.VERSION)
+                .header("X-GitHub-Api-Version", "2022-11-28")
+                .timeout(Duration.ofSeconds(12))
+                .GET();
+        if (TOKEN != null) {
+            builder.header("Authorization", "Bearer " + TOKEN);
+        }
+        try {
+            HttpResponse<String> response = send(builder.build());
+            return response.statusCode() == 200 ? firstParagraph(response.body()) : null;
+        } catch (ApiException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 从 Markdown 里挑出第一段像正文的话：按空行切段，逐段判断，跳过标题、徽章、图片、
+     * 代码块、分隔线、纯链接行，以及「简体中文 | English」这类语言切换行。
+     */
+    static String firstParagraph(String markdown) {
+        if (markdown == null || markdown.isBlank()) {
+            return null;
+        }
+        StringBuilder collected = new StringBuilder();
+        boolean inFence = false;
+        for (String rawLine : markdown.split("\r?\n")) {
+            String line = rawLine.strip();
+            if (line.startsWith("```") || line.startsWith("~~~")) {
+                inFence = !inFence;
+                continue;
+            }
+            if (inFence) {
+                continue;
+            }
+            if (line.isEmpty()) {
+                String paragraph = finish(collected);
+                if (paragraph != null) {
+                    return paragraph;
+                }
+                collected.setLength(0);
+                continue;
+            }
+            if (isSkippableLine(line)) {
+                continue;
+            }
+            if (collected.length() > 0) {
+                collected.append(' ');
+            }
+            collected.append(line);
+            if (collected.length() > SUMMARY_MAX * 3) {
+                String paragraph = finish(collected);
+                if (paragraph != null) {
+                    return paragraph;
+                }
+                collected.setLength(0);
+            }
+        }
+        return finish(collected);
+    }
+
+    /** 一段原始行 -> 可用的简介；不像人写的正文就返回 null，让调用方继续往下找。 */
+    private static String finish(StringBuilder collected) {
+        String text = cleanMarkdown(collected.toString());
+        if (text == null || !looksLikeProse(text)) {
+            return null;
+        }
+        return text.length() > SUMMARY_MAX ? text.substring(0, SUMMARY_MAX).strip() + "…" : text;
+    }
+
+    /**
+     * 判断一段文字像不像简介：够长，而且带句子标点、或者由多个词组成、或者有足够多的中日韩字符。
+     * 「简体中文 | English」这类短导航行三种都不满足，正好被挡掉。
+     */
+    private static boolean looksLikeProse(String text) {
+        if (text.length() < 12 || (text.contains("|") && text.length() < 40)) {
+            return false;
+        }
+        boolean punctuation = text.matches(".*[。！？；，、.!?;,].*");
+        long cjk = text.chars().filter(c -> c >= 0x4E00 && c <= 0x9FFF).count();
+        return punctuation || cjk >= 8 || text.split("\\s+").length >= 4;
+    }
+    /** 标题、引用、注释、分隔线、徽章、纯图片、纯 HTML 标签和纯链接行都不算正文。 */
+    private static boolean isSkippableLine(String line) {
+        return line.startsWith("#")
+                || line.startsWith(">")
+                || line.startsWith("<!--")
+                || line.startsWith("[![")
+                || line.startsWith("![")
+                || line.matches("[-*_=]{3,}")
+                || line.matches("<[^>]+>")
+                || line.matches("https?://\\S+");
+    }
+
+    /** 抹掉 Markdown 记号，留下能当简介用的纯文本。 */
+    private static String cleanMarkdown(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String text = raw
+                .replaceAll("!\\[[^\\]]*\\]\\([^)]*\\)", " ")
+                .replaceAll("\\[([^\\]]*)\\]\\([^)]*\\)", "$1")
+                .replaceAll("`+", "")
+                .replaceAll("\\*\\*([^*]+)\\*\\*", "$1")
+                .replaceAll("(?<!\\*)\\*([^*]+)\\*(?!\\*)", "$1")
+                .replace("__", "")
+                .replaceAll("<[^>]+>", " ")
+                .replaceAll("\\s+", " ")
+                .strip();
+        return text.isEmpty() ? null : text;
     }
 
     private static String text(JsonObject json, String field) {

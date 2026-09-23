@@ -33,6 +33,8 @@
 | 51 | Lookup endpoint | `curl "http://127.0.0.1:8787/api/github/repo?url=https%3A%2F%2Fgithub.com%2Fopenai%2Fopenai-python"` | 200 + `summarySuggestion`; non-github.com -> 400, missing `url` -> 400, unknown repo -> 404 |
 | 52 | Login-only site opens directly | Give a project the demo URL `https://github.com/login` (or tick "this demo needs a login") | The card button becomes "open demo" and jumps in a new tab; the detail page shows the cover placeholder and the reason, with no viewport switcher or refresh |
 | 53 | Sites that forbid framing | Set the demo URL to `https://accounts.google.com/signin` | Same as above: no framing attempt, an "open accounts.google.com" button is offered; only "try framing anyway" really embeds it |
+| 60 | Repository without a description | Paste a repo that has no GitHub description but does have a README (e.g. `https://github.com/Zeroslit/University-Book-Trading-Market`) | The README's first paragraph is suggested, the card is labelled "GitHub README 的第一段", and `summarySource` in the API response is `readme` |
+| 61 | Neither source available | Paste a repo with no description and no usable README body | The hint below the summary field says the summary has to be written by hand — nothing silently does nothing |
 
 ## 9. Click to navigate
 

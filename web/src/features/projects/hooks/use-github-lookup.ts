@@ -18,8 +18,10 @@ function useDebounced<T>(value: T, delay: number): T {
 export interface GitHubLookup {
   /** idle：地址还不是 GitHub 仓库；loading / ready / error 对应后端代取的结果。 */
   status: 'idle' | 'loading' | 'ready' | 'error';
-  /** GitHub 仓库描述，用作简介建议；没有描述时为 null。 */
+  /** GitHub 仓库描述（或 README 首段），用作简介建议；都没有时为 null。 */
   suggestion: string | null;
+  /** suggestion 的来源：描述还是 README 首段；没有建议时为 null。 */
+  source: 'description' | 'readme' | null;
   error: string | null;
 }
 
@@ -50,6 +52,7 @@ export function useGitHubLookup(repoUrl: string): GitHubLookup {
   return {
     status,
     suggestion: query.data?.summarySuggestion?.trim() || null,
+    source: query.data?.summarySuggestion?.trim() ? query.data.summarySource ?? 'description' : null,
     error: query.isError ? errorMessage(query.error) : null,
   };
 }

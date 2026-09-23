@@ -199,7 +199,9 @@ export function ProjectFormDialog({ open, project, tagSuggestions, onClose }: Pr
             <div className="flex items-start gap-2 rounded-control border border-line bg-bg/60 p-2">
               <Github className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" />
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] text-muted">GitHub 上的简介</p>
+                <p className="text-[11px] text-muted">
+                  {lookup.source === 'readme' ? 'GitHub README 的第一段' : 'GitHub 上的简介'}
+                </p>
                 <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-fg/85">{suggestion}</p>
               </div>
               <Button size="sm" variant="outline" onClick={applySuggestion}>
@@ -209,6 +211,11 @@ export function ProjectFormDialog({ open, project, tagSuggestions, onClose }: Pr
           ) : null}
           {lookup.status === 'loading' ? (
             <p className="text-[11px] text-muted">正在读取 GitHub 仓库信息…</p>
+          ) : null}
+          {lookup.status === 'ready' && !suggestion ? (
+            <p className="text-[11px] text-muted">
+              这个仓库在 GitHub 上没写描述，README 里也没找到能当简介的正文，简介只能自己写了。
+            </p>
           ) : null}
           {lookup.status === 'error' ? (
             <p className="text-[11px] text-muted">没读到 GitHub 简介（{lookup.error}），自己写也完全可以。</p>

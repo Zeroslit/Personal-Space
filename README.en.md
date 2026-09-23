@@ -102,11 +102,13 @@ After pasting `https://github.com/owner/repo` into the "GitHub repository" field
 - when the summary is **empty** the repository description is filled in automatically; anything you have written yourself is **never overwritten**;
 - a "GitHub 上的简介" suggestion card appears above the summary field, and clicking "use" applies it;
 - with the cursor in the **summary field**, `Enter` accepts the suggestion and `Shift+Enter` inserts a newline (IME composition does not trigger it by accident), and the confirmation toast offers an undo;
+- when the repository has **no description set**, the backend falls back to the README and uses its **first real paragraph** as the suggestion (headings, badges, images, code fences, language switchers and bare links are skipped), and the suggestion card is labelled "GitHub README 的第一段";
+- when neither source has anything usable you get an explicit hint that the summary has to be written by hand, instead of simply nothing happening;
 - if the lookup fails (private repo, offline, rate limited) you simply get one hint — typing and saving are unaffected; transient failures such as a reset connection are retried once by the backend (12 second timeout).
 
 Optionally set `PSPACE_GITHUB_TOKEN` (or `GITHUB_TOKEN`) to a GitHub personal access token to raise the anonymous rate limit. The request is made by the server, so the token never reaches the browser.
 
-Response fields: `{owner, name, fullName, summarySuggestion, description, homepage, language, stars, forks, topics, htmlUrl, license, pushedAt, cached}`.
+Response fields: `{owner, name, fullName, htmlUrl, description, summarySuggestion, summarySource, homepage, language, defaultBranch, license, pushedAt, archived, stars, forks, openIssues, topics, fetchedAt}`; `summarySource` is `description` (the repository description was used) or `readme` (the README's first paragraph was used), and the field is omitted when there is no suggestion at all.
 
 ## API
 

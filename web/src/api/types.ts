@@ -90,6 +90,8 @@ export interface GitHubRepoInfo {
   htmlUrl: string | null;
   description: string | null;
   summarySuggestion: string | null;
+  /** suggestion 的来源：仓库描述，还是 README 首段兜底 */
+  summarySource?: 'description' | 'readme' | null;
   homepage: string | null;
   language: string | null;
   defaultBranch: string | null;

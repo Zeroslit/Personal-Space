@@ -102,11 +102,13 @@ cd web && npm run dev                                              # 终端 2：
 - **简介为空**时自动填入仓库的 description；你已经写过的文案**不会被覆盖**；
 - 摘要框上方出现「GitHub 上的简介」建议卡，点「使用」即可套用；
 - 光标在**简介输入框**里时，按 `Enter` 采用建议、`Shift+Enter` 换行（输入法组合状态下不会误触），采纳后 Toast 上带「撤销」；
+- 仓库**没有写 description** 时，会自动退一步读 README，用**第一段正文**当建议（标题、徽章、图片、代码块、语言切换行和纯链接行都会跳过），此时建议卡上标的是「GitHub README 的第一段」；
+- 两者都拿不到时，摘要框下方会明确提示「这个仓库在 GitHub 上没写描述…简介只能自己写了」，不会静默什么都不发生；
 - 读不到（仓库私有 / 断网 / 触发速率限制）只提示一句，不影响手写，也不影响保存；连接被重置这类偶发失败服务端会自动重试一次（超时 12 秒）。
 
 可选：把 `PSPACE_GITHUB_TOKEN`（或 `GITHUB_TOKEN`）设成 GitHub personal access token 可提高匿名速率上限；请求由服务端发出，令牌不会进前端。
 
-响应字段：`{owner, name, fullName, summarySuggestion, description, homepage, language, stars, forks, topics, htmlUrl, license, pushedAt, cached}`。
+响应字段：`{owner, name, fullName, htmlUrl, description, summarySuggestion, summarySource, homepage, language, defaultBranch, license, pushedAt, archived, stars, forks, openIssues, topics, fetchedAt}`；`summarySource` 为 `description`（用了仓库描述）或 `readme`（用了 README 首段），没有建议时该字段会被省略。
 
 
 ## API

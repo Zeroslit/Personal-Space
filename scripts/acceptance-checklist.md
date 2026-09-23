@@ -33,6 +33,8 @@
 | 51 | 代取接口 | `curl "http://127.0.0.1:8787/api/github/repo?url=https%3A%2F%2Fgithub.com%2Fopenai%2Fopenai-python"` | 200 + `summarySuggestion`；非 github.com → 400，缺 `url` → 400，仓库不存在 → 404 |
 | 52 | 登录站点直接跳转 | 给项目填演示网址 `https://github.com/login`（或勾选「演示页需要登录」） | 卡片按钮变成「打开演示」、直接新标签跳转；详情页显示封面占位 + 原因，不出现视口切换与刷新 |
 | 53 | 禁止内嵌的站点 | 演示地址填 `https://accounts.google.com/signin` | 同上：不尝试内嵌，给出「打开 accounts.google.com」按钮；点「仍然内嵌试试」才会真的内嵌 |
+| 60 | 仓库没写描述 | 粘贴一个 GitHub 上没有 description、但有 README 的仓库（例如 `https://github.com/Zeroslit/University-Book-Trading-Market`） | 自动带出 README 首段，建议卡上写「GitHub README 的第一段」；接口响应里 `summarySource` 为 `readme` |
+| 61 | 描述和 README 都拿不到 | 粘贴一个既没写 description、README 也没有正文的仓库 | 摘要框下方提示「这个仓库在 GitHub 上没写描述…简介只能自己写了」，不会毫无反应 |
 
 ## 九、点击跳转
 
