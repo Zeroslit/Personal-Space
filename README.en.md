@@ -104,6 +104,7 @@ After pasting `https://github.com/owner/repo` into the "GitHub repository" field
 - with the cursor in the **summary field**, `Enter` accepts the suggestion and `Shift+Enter` inserts a newline (IME composition does not trigger it by accident), and the confirmation toast offers an undo;
 - when the repository has **no description set**, the backend falls back to the README and uses its **first real paragraph** as the suggestion (headings, badges, images, code fences, language switchers and bare links are skipped), and the suggestion card is labelled "GitHub README 的第一段";
 - when neither source has anything usable you get an explicit hint that the summary has to be written by hand, instead of simply nothing happening;
+- every time the new/edit form opens it starts from a clean state: a summary auto-filled in a previous round never leaks into the next one, and the suggestion is discarded the moment the URL field no longer matches it; once you have typed your own summary (or cleared the field by hand) nothing is filled in again;
 - if the lookup fails (private repo, offline, rate limited) you simply get one hint — typing and saving are unaffected; transient failures such as a reset connection are retried once by the backend (12 second timeout).
 
 Optionally set `PSPACE_GITHUB_TOKEN` (or `GITHUB_TOKEN`) to a GitHub personal access token to raise the anonymous rate limit. The request is made by the server, so the token never reaches the browser.
@@ -173,6 +174,12 @@ BASE_URL=http://127.0.0.1:8787 ./scripts/smoke-test.sh
 ```
 
 The item-by-item checklist lives in `scripts/acceptance-checklist.md` (English: `scripts/acceptance-checklist.en.md`).
+
+The frontend also has a vitest layer (URL rules, form validation, the summary auto-fill rules and a form regression that covers "closing and reopening the dialog never leaks the previous summary"). It runs without a backend:
+
+```bash
+cd web && npm test
+```
 
 ## Theme customisation
 

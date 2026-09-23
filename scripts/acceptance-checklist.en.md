@@ -35,6 +35,8 @@
 | 53 | Sites that forbid framing | Set the demo URL to `https://accounts.google.com/signin` | Same as above: no framing attempt, an "open accounts.google.com" button is offered; only "try framing anyway" really embeds it |
 | 60 | Repository without a description | Paste a repo that has no GitHub description but does have a README (e.g. `https://github.com/Zeroslit/University-Book-Trading-Market`) | The README's first paragraph is suggested, the card is labelled "GitHub README 的第一段", and `summarySource` in the API response is `readme` |
 | 61 | Neither source available | Paste a repo with no description and no usable README body | The hint below the summary field says the summary has to be written by hand — nothing silently does nothing |
+| 62 | Nothing leaks into the next form | In the new-project form paste a GitHub URL, wait for the summary to be filled in, close the dialog and click "new project" again | Title, summary and tags are all empty: the previously auto-filled summary does not follow you |
+| 63 | Clearing by hand sticks | Delete the auto-filled summary | It stays empty instead of the suggestion being pushed back in; press Enter or click "use" if you want it |
 
 ## 9. Click to navigate
 

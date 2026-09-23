@@ -5,6 +5,8 @@ import {
   formToPayload,
   githubRepoFromUrl,
   isValidHttpUrl,
+  repoKeyOf,
+  shouldAdoptSummary,
   validateForm,
 } from './form';
 
@@ -120,5 +122,65 @@ describe('addTag', () => {
     expect(addTag(['a'], 'A')).toEqual(['a']);
     expect(addTag([], '  React  ')).toEqual(['React']);
     expect(addTag([], 'x'.repeat(30))[0]).toHaveLength(24);
+  });
+});
+
+describe('repoKeyOf', () => {
+  it('归一化成小写的 owner/name', () => {
+    expect(repoKeyOf('https://github.com/OpenAI/Codex')).toBe('openai/codex');
+    expect(repoKeyOf('https://github.com/openai/codex/tree/main/src')).toBe('openai/codex');
+  });
+
+  it('空地址与非 GitHub 地址都是空串', () => {
+    expect(repoKeyOf('')).toBe('');
+    expect(repoKeyOf('   ')).toBe('');
+    expect(repoKeyOf('https://gitlab.com/a/b')).toBe('');
+  });
+});
+
+describe('shouldAdoptSummary', () => {
+  const baseAdopt = {
+    suggestion: '一个用来展示项目的个人空间',
+    suggestionKey: 'zeroslit/personal-space',
+    currentKey: 'zeroslit/personal-space',
+    summary: '',
+    adopted: '',
+    touched: false,
+  };
+
+  it('简介空着、地址也对得上就自动填充', () => {
+    expect(shouldAdoptSummary(baseAdopt)).toBe(true);
+  });
+
+  it('地址还空着时不吃缓存里的旧建议（关闭再打开不残留简介）', () => {
+    expect(shouldAdoptSummary({ ...baseAdopt, currentKey: '' })).toBe(false);
+  });
+
+  it('地址换成别的仓库后旧建议作废', () => {
+    expect(shouldAdoptSummary({ ...baseAdopt, currentKey: 'zeroslit/other-project' })).toBe(false);
+  });
+
+  it('用户自己写过简介就不覆盖', () => {
+    expect(shouldAdoptSummary({ ...baseAdopt, summary: '我自己写的简介' })).toBe(false);
+  });
+
+  it('用户手动清空过简介也不再回填', () => {
+    expect(shouldAdoptSummary({ ...baseAdopt, touched: true })).toBe(false);
+  });
+
+  it('此刻显示的正是上次自动填的内容时可以换成新建议', () => {
+    expect(
+      shouldAdoptSummary({
+        ...baseAdopt,
+        suggestion: '换了仓库描述',
+        summary: '一个用来展示项目的个人空间',
+        adopted: '一个用来展示项目的个人空间',
+      }),
+    ).toBe(true);
+  });
+
+  it('没有建议时什么都不做', () => {
+    expect(shouldAdoptSummary({ ...baseAdopt, suggestion: null })).toBe(false);
+    expect(shouldAdoptSummary({ ...baseAdopt, suggestion: '   ' })).toBe(false);
   });
 });

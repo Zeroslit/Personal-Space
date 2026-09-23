@@ -91,6 +91,41 @@ export function githubRepoFromUrl(raw: string): { owner: string; name: string } 
   return { owner, name };
 }
 
+/** 仓库地址的规范化 key（`owner/name` 小写）；不是 GitHub 仓库地址时返回空串。 */
+export function repoKeyOf(raw: string): string {
+  const parsed = githubRepoFromUrl(raw);
+  return parsed ? `${parsed.owner}/${parsed.name}`.toLowerCase() : '';
+}
+
+export interface SummaryAdoptInput {
+  /** 后端给出的简介建议；没有建议时为 null。 */
+  suggestion: string | null;
+  /** 这份建议属于哪个仓库（`useGitHubLookup` 返回的 repoKey）。 */
+  suggestionKey: string;
+  /** 简介输入框里此刻的地址算出来的 key。 */
+  currentKey: string;
+  /** 简介输入框里此刻的文本。 */
+  summary: string;
+  /** 上一次自动填进去的原文。 */
+  adopted: string;
+  /** 本轮用户是否亲手改过简介。 */
+  touched: boolean;
+}
+
+/**
+ * 自动填充只在「建议确实属于当前地址」且「用户没动过简介」时才生效。
+ * 表单关闭再打开时，上一轮的查询结果还留在 react-query 缓存里，
+ * 这里用 key 对不上把过期建议挡掉，否则上一轮的简介会残留到新一轮。
+ */
+export function shouldAdoptSummary(input: SummaryAdoptInput): boolean {
+  const next = input.suggestion?.trim();
+  if (!next || !input.currentKey) return false;
+  if (input.currentKey !== input.suggestionKey) return false;
+  if (input.touched) return false;
+  if (next === input.summary) return false;
+  return input.summary.trim() === '' || input.summary === input.adopted;
+}
+
 /** 与后端 Validate 的规则保持一致，前端先拦一轮，减少 400 往返。 */
 export function validateForm(values: FormValues): Record<string, string> {
   const errors: Record<string, string> = {};

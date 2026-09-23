@@ -35,6 +35,8 @@
 | 53 | 禁止内嵌的站点 | 演示地址填 `https://accounts.google.com/signin` | 同上：不尝试内嵌，给出「打开 accounts.google.com」按钮；点「仍然内嵌试试」才会真的内嵌 |
 | 60 | 仓库没写描述 | 粘贴一个 GitHub 上没有 description、但有 README 的仓库（例如 `https://github.com/Zeroslit/University-Book-Trading-Market`） | 自动带出 README 首段，建议卡上写「GitHub README 的第一段」；接口响应里 `summarySource` 为 `readme` |
 | 61 | 描述和 README 都拿不到 | 粘贴一个既没写 description、README 也没有正文的仓库 | 摘要框下方提示「这个仓库在 GitHub 上没写描述…简介只能自己写了」，不会毫无反应 |
+| 62 | 关掉再打开不残留 | 在「新建项目」里粘一个 GitHub 地址、等简介自动带出，关掉弹窗，再点一次「新建项目」 | 标题、简介、标签都是空的：上一轮自动填进去的简介不会跟过来 |
+| 63 | 手动清空不回填 | 简介被自动填上后，把简介删空 | 保持为空，不会又把建议塞回来；想用建议按 Enter 或点「使用」 |
 
 ## 九、点击跳转
 

@@ -10,7 +10,15 @@ import { SnippetEditor } from './snippet-editor';
 import { embedDecision } from '@/features/demo/lib/embed';
 import { useProjectMutations } from '../hooks/use-project-mutations';
 import { useGitHubLookup } from '../hooks/use-github-lookup';
-import { addTag, formToPayload, projectToForm, validateForm, type FormValues } from '../lib/form';
+import {
+  addTag,
+  formToPayload,
+  projectToForm,
+  repoKeyOf,
+  shouldAdoptSummary,
+  validateForm,
+  type FormValues,
+} from '../lib/form';
 
 export interface ProjectFormDialogProps {
   open: boolean;
@@ -19,9 +27,25 @@ export interface ProjectFormDialogProps {
   onClose: () => void;
 }
 
+/**
+ * 关闭时整块卸载、打开时重新挂载：每次打开都是一份全新的表单状态，
+ * 上一轮自动填进去的简介、标签草稿都不会残留到下一轮。
+ */
 export function ProjectFormDialog({ open, project, tagSuggestions, onClose }: ProjectFormDialogProps) {
+  if (!open) return null;
+  return <ProjectForm project={project} tagSuggestions={tagSuggestions} onClose={onClose} />;
+}
+
+interface ProjectFormProps {
+  project: Project | null;
+  tagSuggestions: string[];
+  onClose: () => void;
+}
+
+function ProjectForm({ project, tagSuggestions, onClose }: ProjectFormProps) {
   const { create, update } = useProjectMutations();
   const toast = useToast();
+  const projectId = project?.id ?? null;
   const [values, setValues] = useState<FormValues>(() => projectToForm(project));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [tagDraft, setTagDraft] = useState('');
@@ -30,27 +54,42 @@ export function ProjectFormDialog({ open, project, tagSuggestions, onClose }: Pr
   const suggestion = lookup.suggestion;
   /** 地址本身就注定不能内嵌（登录页 / 禁止内嵌的站点）时提示一下，省掉 8 秒的等待。 */
   const autoDirectOpen = Boolean(values.siteUrl.trim()) && !embedDecision(values.siteUrl).embeddable;
-  /** 上一次自动填充的文本；用户一旦改动就不再自动覆盖。 */
+  /** 上一次自动填进去的原文；只在简介仍等于它时才会被新建议替换。 */
   const autoSummaryRef = useRef('');
+  /** 用户在本轮亲手改过简介后，就不再自动填充。 */
+  const summaryTouchedRef = useRef(false);
+  const projectRef = useRef(project);
+  projectRef.current = project;
 
+  // 只有编辑目标换人（例如从命令面板切到另一个项目）时才重置；列表后台刷新不动表单。
+  const lastProjectId = useRef(projectId);
   useEffect(() => {
-    if (!open) return;
-    setValues(projectToForm(project));
+    if (lastProjectId.current === projectId) return;
+    lastProjectId.current = projectId;
+    setValues(projectToForm(projectRef.current));
     setErrors({});
     setTagDraft('');
     autoSummaryRef.current = '';
-  }, [open, project]);
+    summaryTouchedRef.current = false;
+  }, [projectId]);
 
   // 地址来自 GitHub 且有描述时，只要简介还空着就自动带出来；用户自己写过就不动它。
   useEffect(() => {
-    if (!open || !suggestion) return;
-    setValues((previous) => {
-      const untouched = previous.summary.trim() === '' || previous.summary === autoSummaryRef.current;
-      if (!untouched) return previous;
-      autoSummaryRef.current = suggestion;
-      return { ...previous, summary: suggestion };
+    if (!suggestion) return;
+    const adopt = shouldAdoptSummary({
+      suggestion,
+      suggestionKey: lookup.repoKey,
+      currentKey: repoKeyOf(values.repoUrl),
+      summary: values.summary,
+      adopted: autoSummaryRef.current,
+      touched: summaryTouchedRef.current,
     });
-  }, [suggestion, open]);
+    if (!adopt) return;
+    autoSummaryRef.current = suggestion;
+    setValues((previous) =>
+      previous.summary === values.summary ? { ...previous, summary: suggestion } : previous,
+    );
+  }, [suggestion, lookup.repoKey, values.repoUrl, values.summary]);
 
   function set<K extends keyof FormValues>(key: K, value: FormValues[K]) {
     setValues((previous) => ({ ...previous, [key]: value }));
@@ -65,6 +104,7 @@ export function ProjectFormDialog({ open, project, tagSuggestions, onClose }: Pr
     if (text !== autoSummaryRef.current) {
       autoSummaryRef.current = '';
     }
+    summaryTouchedRef.current = true;
     set('summary', text);
   };
 
@@ -73,10 +113,18 @@ export function ProjectFormDialog({ open, project, tagSuggestions, onClose }: Pr
     if (!suggestion) return;
     const previous = values.summary;
     autoSummaryRef.current = suggestion;
+    summaryTouchedRef.current = false;
     set('summary', suggestion);
     toast.info('已采用 GitHub 简介', {
       description: '想改回自己写的版本，点「撤销」',
-      action: { label: '撤销', onClick: () => set('summary', previous) },
+      action: {
+        label: '撤销',
+        onClick: () => {
+          autoSummaryRef.current = '';
+          summaryTouchedRef.current = true;
+          set('summary', previous);
+        },
+      },
     });
   };
 
@@ -87,13 +135,10 @@ export function ProjectFormDialog({ open, project, tagSuggestions, onClose }: Pr
     applySuggestion();
   };
 
-  /** 简介还空着、或此刻显示的正是上次自动填进去的内容时，才算「没被用户改过」。 */
-  const summaryUntouched = () => values.summary.trim() === '' || values.summary === autoSummaryRef.current;
-
   /** 粘贴完 GitHub 地址直接按 Enter 就能用上自动带出的简介；不按就自己写。 */
   const handleRepoKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
-    if (!suggestion || suggestion === values.summary || !summaryUntouched()) return;
+    if (!suggestion || suggestion === values.summary || summaryTouchedRef.current) return;
     event.preventDefault();
     applySuggestion();
   };
@@ -129,7 +174,7 @@ export function ProjectFormDialog({ open, project, tagSuggestions, onClose }: Pr
 
   return (
     <Dialog
-      open={open}
+      open
       onClose={onClose}
       title={project ? '编辑项目' : '新建项目'}
       description="GitHub 仓库地址必填，演示网址可选；粘贴 GitHub 地址会自动带出简介，按 Enter 采用。"

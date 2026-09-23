@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessage } from '@/api/client';
 import { fetchGitHubRepo } from '@/api/github';
-import { githubRepoFromUrl } from '../lib/form';
+import { repoKeyOf } from '../lib/form';
 
 const DEBOUNCE_MS = 500;
 
@@ -22,6 +22,8 @@ export interface GitHubLookup {
   suggestion: string | null;
   /** suggestion 的来源：描述还是 README 首段；没有建议时为 null。 */
   source: 'description' | 'readme' | null;
+  /** 这份建议对应的仓库 key（`owner/name` 小写）；地址还没成形时为空串。 */
+  repoKey: string;
   error: string | null;
 }
 
@@ -31,8 +33,7 @@ export interface GitHubLookup {
  */
 export function useGitHubLookup(repoUrl: string): GitHubLookup {
   const debounced = useDebounced(repoUrl.trim(), DEBOUNCE_MS);
-  const parsed = githubRepoFromUrl(debounced);
-  const key = parsed ? `${parsed.owner}/${parsed.name}`.toLowerCase() : '';
+  const key = repoKeyOf(debounced);
   const query = useQuery({
     queryKey: ['github-repo', key],
     enabled: key.length > 0,
@@ -53,6 +54,7 @@ export function useGitHubLookup(repoUrl: string): GitHubLookup {
     status,
     suggestion: query.data?.summarySuggestion?.trim() || null,
     source: query.data?.summarySuggestion?.trim() ? query.data.summarySource ?? 'description' : null,
+    repoKey: key,
     error: query.isError ? errorMessage(query.error) : null,
   };
 }
